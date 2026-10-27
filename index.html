@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>SIGUNARA · Gestión de gastos</title>
+<meta name="theme-color" content="#1B4332">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icono-192.png">
+<link rel="apple-touch-icon" href="icono-192.png">
+<meta name="apple-mobile-web-app-title" content="Gastos SIGUNARA">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{
+--verde:#1B4332; --lima:#D4E157; --blanco:#FFFFFF;
+--bg:#F4F6F2; --surface:#FFFFFF; --surface-2:#E7ECE5; --ink:#12291F; --ink-2:#4A5C52; --line:#D2DBD3;
+--alta:#B3261E; --alta-soft:#F6E0DD; --ok:#1B4332; --ok-soft:#D4E157; --warn:#8A5A00; --warn-soft:#F4EFC9;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:Arial,sans-serif;font-size:14px;line-height:1.45;margin:0}
+button,input,select{font:inherit;color:inherit}
+.wrap{max-width:1320px;margin:0 auto;padding-inline:16px}
+header.top{background:var(--verde);color:var(--blanco);border-bottom:5px solid var(--lima)}
+.top .wrap{display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap;padding-block:12px}
+.brand{display:flex;align-items:center;gap:12px;margin-right:auto}
+.brand strong{display:block;font-weight:800;font-size:20px;letter-spacing:.04em}
+.brand span{display:block;color:var(--lima);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+.whoami{display:flex;align-items:center;gap:10px;font-size:12.5px;font-weight:700;color:var(--lima)}
+main{padding-block:20px 60px}
+h1{font-size:20px;font-weight:800;margin:0;text-transform:uppercase;letter-spacing:.03em;color:var(--verde)}
+.nota{color:var(--ink-2)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px;box-shadow:0 1px 2px rgba(18,41,31,.07)}
+.login{min-height:70vh;display:grid;place-items:center;padding-block:24px}
+.login .card{max-width:400px;width:100%;border-top:6px solid var(--lima);padding:26px 22px;text-align:center}
+.apilado{display:grid;gap:10px;width:100%;text-align:left}
+.apilado input,.apilado select{border:1px solid var(--line);border-radius:4px;padding:10px;width:100%}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:8px 12px;cursor:pointer;font-weight:600}
+.btn.primary{background:var(--verde);border-color:var(--verde);color:var(--blanco);width:100%}
+.btn.sm{padding:4px 9px;font-size:12.5px}
+.linkbtn{background:none;border:0;color:var(--verde);font-weight:700;text-decoration:underline;cursor:pointer;padding:2px;font-size:13px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;border-radius:4px;padding:2px 7px;white-space:nowrap}
+.chip.tarjeta{background:#E4EBC0;color:var(--verde)}
+.chip.transferencia{background:var(--surface-2);color:var(--ink-2)}
+.chip.pend{background:var(--warn-soft);color:var(--warn)}
+.chip.ok{background:var(--ok-soft);color:var(--ok)}
+.chip.na{background:var(--alta-soft);color:var(--alta)}
+table{border-collapse:collapse;width:100%;background:var(--surface);font-size:12.5px}
+th,td{border:1px solid var(--line);padding:7px 8px;text-align:left;vertical-align:top}
+th{background:var(--verde);color:var(--blanco);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+tr:nth-child(even) td{background:var(--surface-2)}
+select.mini{padding:3px 4px;font-size:12px;border:1px solid var(--line);border-radius:4px}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--verde);color:var(--blanco);padding:10px 18px;border-radius:6px;font-weight:600;z-index:99}
+#toast[hidden]{display:none}
+.ocupado{opacity:.6;pointer-events:none}
+.filtros{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.filtros select,.filtros input{border:1px solid var(--line);border-radius:6px;padding:6px 9px}
+.meses{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.mes-btn{background:var(--surface-2)}
+.mes-btn.activo{background:var(--verde);color:var(--blanco);border-color:var(--verde)}
+.aviso{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-weight:600}
+.aviso.ok{background:var(--ok-soft);color:var(--ok)}
+.scrim{position:fixed;inset:0;background:rgba(10,15,12,.55);z-index:50;display:flex;align-items:center;justify-content:center}
+.scrim[hidden]{display:none}
+.panel{background:var(--surface);border-radius:10px;padding:16px;max-width:90vw;max-height:90vh;overflow:auto;width:700px}
+.panel iframe{width:100%;height:70vh;border:1px solid var(--line);border-radius:8px;margin-top:10px}
+.panel img{max-width:100%;margin-top:10px}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+<div class="brand"><strong>SIGUNARA</strong><span>Gestion de Gastos</span></div>
+<div class="whoami" id="who"></div>
+</div></header>
+<main class="wrap" id="main"></main>
+<div id="toast" hidden></div>
+<div id="modalComprobante" class="scrim" hidden><div class="panel"><button class="btn sm" id="cerrarComprobante">Cerrar</button><div id="comprobanteBody"></div></div></div><div id="modalNuevoGasto" class="scrim" hidden><div class="panel"><button class="btn sm" id="cerrarNuevoGasto">Cerrar</button><h2>Nuevo gasto</h2><label style="display:block;margin:10px 0 4px;font-weight:700">Fecha</label><input type="date" id="ngFecha" style="width:100%;padding:8px"><label style="display:block;margin:10px 0 4px;font-weight:700">Emisor</label><input type="text" id="ngEmisor" style="width:100%;padding:8px"><label style="display:block;margin:10px 0 4px;font-weight:700">Categoria</label><input type="text" id="ngCategoria" style="width:100%;padding:8px"><label style="display:block;margin:10px 0 4px;font-weight:700">Total</label><input type="number" id="ngTotal" step="0.01" style="width:100%;padding:8px"><label style="display:block;margin:10px 0 4px;font-weight:700">Medio de pago</label><select id="ngTipoDebito" style="width:100%;padding:8px"><option value="">(sin definir)</option><option value="Transferencia">Transferencia</option><option value="Tarjeta precargada">Tarjeta precargada</option></select><label style="display:block;margin:10px 0 4px;font-weight:700">Tipo de comprobante</label><select id="ngTipoComprobante" style="width:100%;padding:8px"><option value="">(sin clasificar)</option><option value="Factura A">Factura A</option><option value="Factura B">Factura B</option><option value="Factura C">Factura C</option><option value="Ticket comun">Ticket comun</option><option value="Sin comprobante autorizado por comision">Sin comprobante autorizado por comision</option></select><label style="display:block;margin:10px 0 4px;font-weight:700">Comprobante (opcional)</label><input type="file" id="ngArchivo" accept="image/*,.pdf"><p style="margin-top:14px"><button class="btn primary" id="guardarNuevoGasto">Guardar</button></p></div></div><div id="modalComentarios" class="scrim" hidden><div class="panel"><button class="btn sm" id="cerrarComentarios">Cerrar</button><h2>Comentarios</h2><div id="comentariosBody"></div><textarea id="nuevoComentarioTexto" placeholder="Escribir un comentario..." style="width:100%;margin-top:10px;min-height:60px"></textarea><p style="margin-top:10px"><button class="btn primary" id="guardarComentario">Agregar comentario</button></p></div></div>
+<script>
+const state = { loginPaso: 'inicio', loginMail: '', busy: false, filtroEstado: '', filtroTexto: '', view: 'gastos', mes: '' };
+let D = null;
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(m, err){ const e = $('#toast'); e.textContent = m; e.style.background = err ? '#B3261E' : ''; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => e.hidden = true, err ? 6000 : 3000); }
+function sesion(v){ try{ if (v === undefined) return localStorage.getItem('gastos_sesion') || ''; if (v) localStorage.setItem('gastos_sesion', v); else localStorage.removeItem('gastos_sesion'); }catch(e){ return ''; } }
+
+/* Dentro de Google usa google.script.run; publicada afuera (GitHub Pages) llama al servidor por internet,
+   sin usar ninguna sesion de Google: asi no importa cuantas cuentas de Google tenga abiertas el navegador. */
+const API_URL = "https://script.google.com/macros/s/AKfycbw3Tzdrt7zWBGVrAJ8DRWliH4D7ikmKNYg6BCZR7TAN_SsYwm8B21UA7zECP4V-dHy-LQ/exec";
+function respuesta(r, ok, fail){
+if (r && r.ok) return ok(r.data);
+if (r && r.auth){ sesion(null); D = null; render(); }
+fail(new Error(r ? r.error : 'Error desconocido'));
+}
+function llamar(action, data){
+const req = { token: sesion(), action, data };
+if (window.google && google.script && google.script.run) {
+return new Promise((ok, fail) => {
+google.script.run.withSuccessHandler(r => respuesta(r, ok, fail))
+.withFailureHandler(e => fail(new Error(e && e.message ? e.message : 'No se pudo conectar.')))
+.api(req);
+});
+}
+return new Promise((ok, fail) => {
+fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(req), credentials: 'omit', redirect: 'follow' })
+.then(r => { if (!r.ok) throw new Error('El servidor respondio ' + r.status); return r.json(); })
+.then(r => respuesta(r, ok, fail))
+.catch(e => fail(new Error(e && e.message && !/fetch/i.test(e.message) ? e.message : 'No se pudo conectar. Revisa tu conexion.')));
+});
+}
+async function accion(action, data, msg){
+if (state.busy) { document.title = 'BUSY-BLOCKED'; return; }
+try{
+const r = await llamar(action, data);
+if (r && r.gastos) D = r; else if (r && r.datos) { D = r.datos; }
+render();
+if (msg) toast(msg);
+return r;
+}catch(e){ toast(e.message, true); document.title = 'CATCH-ACCION ' + e.message; }
+finally{ state.busy = false; document.body.classList.remove('ocupado'); }
+}
+
+const campo = (id, tipo, ph, extra) => `<input id="${id}" type="${tipo}" required placeholder="${ph}" ${extra||''}>`;
+function vLogin(){
+$('#who').innerHTML = '';
+const p = state.loginPaso, m = esc(state.loginMail);
+let cuerpo;
+if (p === 'recuperar') cuerpo = `<h2>Primera vez / Olvide mi contrasena</h2><p class="nota">Te mandamos un codigo para crear tu contrasena.</p>
+<form id="fRecup" class="apilado">${campo('lMail','email','tu correo',`value="${m}"`)}<button class="btn primary">Enviarme el codigo</button></form>`;
+else if (p === 'nueva') cuerpo = `<h2>Crea tu contrasena</h2><p class="nota">Revisa tu correo, te llego un codigo de 6 numeros.</p>
+<form id="fNueva" class="apilado">${campo('lCodigo','text','Codigo de 6 numeros','inputmode="numeric" maxlength="6"')}
+${campo('lClave1','password','Contrasena nueva (minimo 8 caracteres)','minlength="8"')}
+<button class="btn primary">Guardar contrasena y entrar</button></form>`;
+else cuerpo = `<p class="nota">Ingresa con tu correo y tu contrasena.</p>
+<form id="fLogin" class="apilado">${campo('lMail','email','tu correo',`value="${m}"`)}${campo('lClave','password','tu contrasena','')}
+<button class="btn primary">Entrar</button></form>
+<button class="linkbtn" data-login="recuperar">Primera vez / Olvide mi contrasena</button>`;
+$('#main').innerHTML = `<div class="login"><div class="card"><h1>Gestion de Gastos SIGUNARA</h1>${cuerpo}
+${p !== 'inicio' ? '<button class="linkbtn" data-login="inicio">Volver al ingreso</button>' : ''}</div></div>`;
+const foco = $('#main input'); if (foco) foco.focus();
+}
+async function ingresar(action, data){
+try{
+state.busy = true; document.body.classList.add('ocupado');
+const r = await llamar(action, data);
+sesion(r.token); D = r.datos; state.loginPaso = 'inicio'; render();
+toast('Hola, ' + D.usuario.nombre.split(' ')[0]);
+const c = await llamar('cargar', {}); D = c; render();
+}catch(e){ toast(e.message, true); }
+finally{ state.busy = false; document.body.classList.remove('ocupado'); }
+}
+
+function chipTipoDebito(v){
+if (v === 'Tarjeta precargada') return '<span class="chip tarjeta">Tarjeta precargada</span>';
+if (v === 'Transferencia') return '<span class="chip transferencia">Transferencia</span>';
+return '<span class="chip na">Sin definir</span>';
+}
+function comentariosChip(g){ const n = g.comentarios || 0; const cls = n > 0 ? 'chip pend' : 'chip na'; const txt = n > 0 ? (n + ' coment.') : 'Sin comentarios'; return `<button class="${cls}" style="cursor:pointer;border:0" data-ver-comentarios="${g.fila}">${txt}</button>`; }
+function mostrarComentarios(fila, lista){
+
+$('#modalComentarios').dataset.fila = fila;
+$('#nuevoComentarioTexto').value = '';
+$('#comentariosBody').innerHTML = lista.length ? lista.map(function(c){ return '<div style="border-bottom:1px solid #eee;padding:6px 0"><b>' + esc(c.autor) + '</b> <span style="color:#888;font-size:12px">' + esc(c.fecha) + '</span><div>' + esc(c.texto) + '</div></div>'; }).join('') : '<p>Sin comentarios todav\u00eda.</p>';
+$('#modalComentarios').removeAttribute('hidden'); $('#modalComentarios').style.display = 'flex';
+}
+function chipEstado(g){
+if (g.estado === 'Transferido') return '<span class="chip ok">Transferido</span>';
+if (g.estado === 'Solicitado') return '<span class="chip pend">Solicitado' + (g.motivoPendiente ? ' - ' + esc(g.motivoPendiente) : '') + '</span>';
+return '<span class="chip na">' + esc(g.estado || 'Sin estado') + '</span>';
+}
+function esRol(r){ return D.usuario.rol === r; }
+function puedeEstado(){ return ['Secretario General','Secretario de Hacienda'].indexOf(D.usuario.rol) >= 0; }
+function puedeCategoria(){ return D.usuario.rol === 'Contadora'; }
+
+const MOTIVOS = ['', 'Sin factura', 'Sin transferir', 'A la firma'];
+const FIRMANTES = ['', 'Secretario General', 'Secretario de Hacienda'];
+const TIPOS_COMPROBANTE = ['', 'Factura A', 'Factura B', 'Factura C', 'Ticket comun', 'Sin comprobante autorizado por comision', 'Sin clasificar'];
+const MEDIOS_PAGO = ['', 'Transferencia', 'Tarjeta precargada'];
+
+function filaGasto(g){ const editaEstado = puedeEstado(); const editaCat = puedeCategoria(); const archivo = (g.archivo && !/^Mail/i.test(g.archivo)) ? `<button class="chip ok" style="cursor:pointer;border:0" data-ver-comprobante="${g.fila}">Con comprobante</button>` : '<span class="chip na">Sin comprobante</span>'; return `<tr data-fila="${g.fila}"><td>${editaEstado ? `<input class="mini editdato" data-campo="fecha" value="${esc(g.fecha)}" style="width:85px">` : esc(g.fecha)}</td><td>${editaEstado ? `<input class="mini editdato" data-campo="emisor" value="${esc(g.emisor)}" style="width:110px">` : esc(g.emisor)}</td><td>${editaEstado ? `<input class="mini editdato" data-campo="beneficiario" value="${esc(g.beneficiario)}" style="width:110px">` : esc(g.beneficiario)}</td><td>${editaCat ? `<input class="mini editcat" data-campo="categoria" value="${esc(g.categoria)}" style="width:100px">` : editaEstado ? `<input class="mini editdato" data-campo="categoria" value="${esc(g.categoria)}" style="width:100px">` : esc(g.categoria)}</td><td style="text-align:right">${editaEstado ? `<input class="mini editdato" data-campo="total" value="${esc(g.total)}" style="width:80px;text-align:right">` : esc(g.total)}</td><td>${archivo}</td><td>${editaEstado ? `<select class="mini editdato" data-campo="tipoComprobante" style="width:120px">${TIPOS_COMPROBANTE.map(t=>`<option value="${t}"${t===g.tipoComprobante?' selected':''}>${esc(t||'(sin clasificar)')}</option>`).join('')}</select>` : esc(g.tipoComprobante || 'Sin clasificar')}</td><td>${editaEstado ? `<select class="mini editdato" data-campo="tipoDebito">${MEDIOS_PAGO.map(m=>`<option value="${m}"${m===g.tipoDebito?' selected':''}>${esc(m||'(sin definir)')}</option>`).join('')}</select>` : chipTipoDebito(g.tipoDebito)}</td><td>${chipEstado(g)}</td><td>${editaEstado ? `<select class="mini editestado" data-campo="motivoPendiente">${MOTIVOS.map(m=>`<option value="${m}"${m===g.motivoPendiente?' selected':''}>${esc(m||'(sin motivo)')}</option>`).join('')}</select>` : esc(g.motivoPendiente)}</td><td>${editaEstado ? `<select class="mini editestado" data-campo="firmante">${FIRMANTES.map(f=>`<option value="${f}"${f===g.firmante?' selected':''}>${esc(f||'(sin asignar)')}</option>`).join('')}</select>` : esc(g.firmante)}</td><td>${editaEstado ? `<input class="mini editdato" data-campo="aclaracion" value="${esc(g.aclaracion)}" style="width:120px">` : esc(g.aclaracion)}</td><td>${editaCat ? `<input class="mini editcat" data-campo="observacionesContadora" value="${esc(g.observacionesContadora)}" style="width:120px">` : esc(g.observacionesContadora)}</td><td>${comentariosChip(g)}</td></tr>`; }
+
+function vListado(){
+$('#who').innerHTML = `<span>${esc(D.usuario.nombre)} - ${esc(D.usuario.rol)}</span><button class="btn sm" data-act="salir">Salir</button>`;
+let gastos = (D.gastos || []).slice().reverse();
+if (state.filtroEstado) gastos = gastos.filter(g => g.estado === state.filtroEstado);
+if (state.filtroTexto) { const q = state.filtroTexto.toLowerCase(); gastos = gastos.filter(g => (g.emisor||'').toLowerCase().indexOf(q) >= 0 || (g.categoria||'').toLowerCase().indexOf(q) >= 0); }
+$('#main').innerHTML = `<h1>Gastos y transferencias</h1>${puedeEstado() ? '<button class="btn sm primary" id="btnNuevoGasto">+ Nuevo gasto</button>' : ''}
+<div class="filtros">
+<input id="fTexto" placeholder="Buscar por emisor o categoria..." value="${esc(state.filtroTexto)}">
+<select id="fEstado"><option value="">Todos los estados</option><option value="Solicitado"${state.filtroEstado==='Solicitado'?' selected':''}>Solicitado</option><option value="Transferido"${state.filtroEstado==='Transferido'?' selected':''}>Transferido</option></select>
+</div>
+<div style="overflow-x:auto"><table><thead><tr>
+<th>Fecha</th><th>Emisor</th><th>Categoria</th><th>Total</th><th>Comprobante</th><th>Tipo comprobante</th><th>Medio de pago</th><th>Estado</th><th>Motivo pendiente</th><th>Firmante</th><th>Observaciones contadora</th>
+</tr></thead><tbody>${gastos.map(filaGasto).join('')}</tbody></table></div>`;
+}
+
+function esAdmin(){ return D.usuario.rol === 'Secretario General' || D.usuario.rol === 'Secretario de Hacienda'; }
+function navHtml(){ return esAdmin() ? `<button class="btn sm" data-nav="gastos">Gastos</button><button class="btn sm" data-nav="usuarios">Usuarios</button>` : ''; }
+function mesClave(f){ const p = String(f||'').split('/'); return p.length===3 ? p[2]+'-'+p[1] : 'sinfecha'; }
+function mesLabel(c){ if (c==='sinfecha') return 'Sin fecha'; const [y,m] = c.split('-'); const N=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']; return N[Number(m)-1]+' '+y; }
+function render(){
+if (!D) { vLogin(); return; }
+if (state.view === 'usuarios') vUsuarios(); else vListado();
+}
+function vListado(){
+$('#who').innerHTML = `<span>${esc(D.usuario.nombre)} - ${esc(D.usuario.rol)}</span>${navHtml()}<button class="btn sm" data-act="salir">Salir</button>`;
+let todos = (D.gastos || []).slice().reverse();
+const clavesReales = [...new Set(todos.map(g => mesClave(g.fecha)))].filter(c => c !== 'sinfecha').sort().reverse();
+const meses = todos.some(g => mesClave(g.fecha) === 'sinfecha') ? clavesReales.concat(['sinfecha']) : clavesReales;
+if (!state.mes || meses.indexOf(state.mes) < 0) state.mes = clavesReales[0] || meses[0] || '';
+const delMes = todos.filter(g => mesClave(g.fecha) === state.mes);
+const fkFecha = f => { const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(f || ''); return m ? m[3] + m[2] + m[1] : '00000000'; }; let gastos = delMes.slice().sort((a, b) => (fkFecha(b.fecha) < fkFecha(a.fecha) ? -1 : fkFecha(b.fecha) > fkFecha(a.fecha) ? 1 : b.fila - a.fila));
+if (state.filtroEstado) gastos = gastos.filter(g => g.estado === state.filtroEstado);
+if (state.filtroTexto) { const q = state.filtroTexto.toLowerCase(); gastos = gastos.filter(g => (g.emisor||'').toLowerCase().indexOf(q) >= 0 || (g.categoria||'').toLowerCase().indexOf(q) >= 0); }
+const sinComprobante = delMes.filter(g => (!g.archivo || /^Mail/i.test(g.archivo))).length;
+const pendTransf = delMes.filter(g => g.estado === 'Solicitado').length;
+$('#main').innerHTML = `<h1>Gastos y transferencias</h1>${puedeEstado() ? '<button class="btn sm primary" id="btnNuevoGasto">+ Nuevo gasto</button>' : ''}
+<div class="meses">${meses.map(m => `<button class="btn sm mes-btn${m===state.mes?' activo':''}" data-mes="${esc(m)}">${esc(mesLabel(m))}</button>`).join('')}</div>
+${(sinComprobante || pendTransf) ? `<div class="aviso">Este mes: ${sinComprobante} gasto(s) sin comprobante · ${pendTransf} transferencia(s) pendiente(s)</div>` : '<div class="aviso ok">Este mes no tiene faltantes.</div>'}
+<div class="filtros">
+<input id="fTexto" placeholder="Buscar por emisor o categoria..." value="${esc(state.filtroTexto)}">
+<select id="fEstado"><option value="">Todos los estados</option><option value="Solicitado"${state.filtroEstado==='Solicitado'?' selected':''}>Solicitado</option><option value="Transferido"${state.filtroEstado==='Transferido'?' selected':''}>Transferido</option></select>
+</div>
+<div style="overflow-x:auto"><table><thead><tr>
+<th>Fecha</th><th>Emisor</th><th>Reintegrar a</th><th>Categoria</th><th>Total</th><th>Comprobante</th><th>Tipo comprobante</th><th>Medio de pago</th><th>Estado</th><th>Motivo pendiente</th><th>Firmante</th><th>Comentarios del gasto</th><th>Observaciones contadora</th><th>Comentarios Junta</th>
+</tr></thead><tbody>${gastos.map(filaGasto).join('')}</tbody></table></div>`;
+}
+
+async function vUsuarios(){
+$('#who').innerHTML = `<span>${esc(D.usuario.nombre)} - ${esc(D.usuario.rol)}</span>${navHtml()}<button class="btn sm" data-act="salir">Salir</button>`;
+if (!esAdmin()) { $('#main').innerHTML = '<p class="nota">No tenes permiso para ver esta seccion.</p>'; return; }
+$('#main').innerHTML = '<h1>Usuarios de la plataforma</h1><p class="nota">Cargando...</p>';
+try{ state.usuarios = await llamar('listarUsuarios', {}); }catch(e){ toast(e.message, true); state.usuarios = state.usuarios || []; }
+renderUsuarios();
+}
+function renderUsuarios(){
+const ROLES_PLAT = ['Secretario General','Secretario de Hacienda','Contadora','Junta revisora'];
+const lista = state.usuarios || [];
+$('#main').innerHTML = `<h1>Usuarios de la plataforma</h1>
+<p class="nota">Solo Secretario General y Secretario de Hacienda pueden ver y editar esta lista.</p>
+<div style="overflow-x:auto"><table><thead><tr><th>Correo</th><th>Nombre</th><th>Rol</th><th>Activo</th><th></th></tr></thead><tbody>
+${lista.map((u,i) => `<tr data-i="${i}">
+<td>${esc(u.correo)}</td>
+<td><input class="mini u-nombre" value="${esc(u.nombre)}"></td>
+<td><select class="mini u-rol">${ROLES_PLAT.map(r => `<option value="${esc(r)}"${r===u.rol?' selected':''}>${esc(r)}</option>`).join('')}</select></td>
+<td><input type="checkbox" class="u-activo" ${u.activo?'checked':''}></td>
+<td><button class="btn sm" data-guardar-usuario="${i}">Guardar</button></td>
+</tr>`).join('')}
+<tr>
+<td><input id="nCorreo" class="mini" placeholder="correo@gmail.com"></td>
+<td><input id="nNombre" class="mini" placeholder="Nombre"></td>
+<td><select id="nRol" class="mini">${ROLES_PLAT.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join('')}</select></td>
+<td><input type="checkbox" id="nActivo" checked></td>
+<td><button class="btn sm primary" id="btnNuevoUsuario">Agregar</button></td>
+</tr>
+</tbody></table></div>`;
+}
+
+document.addEventListener('submit', e => {
+e.preventDefault();
+if (e.target.id === 'fLogin') ingresar('ingresar', { email: $('#lMail').value, clave: $('#lClave').value });
+else if (e.target.id === 'fRecup') { state.loginMail = $('#lMail').value; accion('pedirCodigo', { email: state.loginMail }).then(r => { state.loginPaso = 'nueva'; render(); toast(r.mensaje); }).catch(()=>{}); }
+else if (e.target.id === 'fNueva') ingresar('crearClave', { email: state.loginMail, codigo: $('#lCodigo').value, clave: $('#lClave1').value });
+});
+document.addEventListener('click', e => {
+const login = e.target.closest('[data-login]');
+if (login) { state.loginPaso = login.dataset.login; render(); return; }
+const act = e.target.closest('[data-act]');
+if (act && act.dataset.act === 'salir') { sesion(null); D = null; render(); return; }
+const nav = e.target.closest('[data-nav]'); if (nav) { state.view = nav.dataset.nav; render(); return; }
+const mesBtn = e.target.closest('[data-mes]'); if (mesBtn) { state.mes = mesBtn.dataset.mes; render(); return; }
+const gUsuario = e.target.closest('[data-guardar-usuario]'); if (gUsuario) { const tr = gUsuario.closest('tr'); const i = Number(gUsuario.dataset.guardarUsuario); const u = state.usuarios[i]; const datos = { correo: u.correo, nombre: tr.querySelector('.u-nombre').value, rol: tr.querySelector('.u-rol').value, activo: tr.querySelector('.u-activo').checked }; accion('guardarUsuario', datos, 'Guardado').then(lista => { state.usuarios = lista; renderUsuarios(); }); return; }
+if (e.target.id === 'btnNuevoUsuario') { const datos = { correo: $('#nCorreo').value, nombre: $('#nNombre').value, rol: $('#nRol').value, activo: $('#nActivo').checked }; if (!datos.correo) { toast('Falta el correo.', true); return; } accion('guardarUsuario', datos, 'Usuario agregado').then(lista => { state.usuarios = lista; renderUsuarios(); }); return; }
+const verComp = e.target.closest('[data-ver-comprobante]'); if (verComp) { const fila = Number(verComp.dataset.verComprobante); accion('obtenerComprobante', { fila }).then(r => { if (!r) return; const esImg = /\.(jpg|jpeg|png|gif|webp)$/i.test(r.nombre); const cuerpo = esImg ? `<img src="${r.verUrl.replace('/preview','/view')}">` : `<iframe src="${r.verUrl}"></iframe>`; $('#comprobanteBody').innerHTML = `<h2>${esc(r.nombre)}</h2>${cuerpo}<p><a class="btn sm primary" href="${r.descargarUrl}" target="_blank">Descargar</a></p>`; $('#modalComprobante').hidden = false; }); return; }
+if (e.target.id === 'cerrarComprobante' || e.target.id === 'modalComprobante') {
+$('#modalComprobante').hidden = true; $('#comprobanteBody').innerHTML = '';
+return;
+}
+});
+document.addEventListener('change', e => { if (e.target.id === 'fEstado') { state.filtroEstado = e.target.value; render(); return; } if (e.target.classList.contains('editdato')) { const tr = e.target.closest('tr'); const fila = Number(tr.dataset.fila); const campo = e.target.dataset.campo; accion('editarCampoGasto', { fila, campo, valor: e.target.value }, 'Guardado'); return; } if (e.target.classList.contains('editestado') || e.target.classList.contains('editcat')) { const tr = e.target.closest('tr'); const fila = Number(tr.dataset.fila); const campo = e.target.dataset.campo; const datos = { fila }; datos[campo] = e.target.value; const action = e.target.classList.contains('editestado') ? 'cambiarEstadoMotivo' : 'cambiarCategoria'; accion(action, datos, 'Guardado'); } });
+document.addEventListener('input', e => {
+if (e.target.id === 'fTexto') { state.filtroTexto = e.target.value; render(); $('#fTexto').focus(); $('#fTexto').setSelectionRange(999,999); }
+});
+document.addEventListener('click', e => { if (e.target.id === 'btnNuevoGasto') { $('#ngFecha').value = ''; $('#ngEmisor').value = ''; $('#ngCategoria').value = ''; $('#ngTotal').value = ''; $('#ngTipoDebito').value = ''; $('#ngTipoComprobante').value = ''; $('#ngArchivo').value = ''; $('#modalNuevoGasto').hidden = false; return; } if (e.target.id === 'cerrarNuevoGasto' || e.target.id === 'modalNuevoGasto') { $('#modalNuevoGasto').hidden = true; return; } if (e.target.id === 'guardarNuevoGasto') { const fecha = $('#ngFecha').value; const emisor = $('#ngEmisor').value.trim(); if (!fecha || !emisor) { toast('Completa fecha y emisor', true); return; } const datos = { fecha, emisor, categoria: $('#ngCategoria').value.trim(), total: $('#ngTotal').value, tipoDebito: $('#ngTipoDebito').value, tipoComprobante: $('#ngTipoComprobante').value }; const archivo = $('#ngArchivo').files[0]; const guardar = () => { accion('crearGastoManual', datos, 'Gasto agregado').then(r => { if (r) $('#modalNuevoGasto').hidden = true; }); }; if (archivo) { const lector = new FileReader(); lector.onload = () => { datos.archivoNombre = archivo.name; datos.archivoMime = archivo.type; datos.archivoBase64 = lector.result.split(',')[1]; guardar(); }; lector.readAsDataURL(archivo); } else guardar(); } if (e.target.dataset.verComentarios) { const fila = e.target.dataset.verComentarios;  action('obtenerComentarios', {fila: fila}).then(function(lista){ mostrarComentarios(fila, lista); }); return; } if (e.target.id === 'cerrarComentarios' || e.target.id === 'modalComentarios') { $('#modalComentarios').hidden = true; return; } if (e.target.id === 'guardarComentario') { var fila2 = $('#modalComentarios').dataset.fila; var texto = $('#nuevoComentarioTexto').value.trim(); if (!texto) return; action('agregarComentario', {fila: fila2, texto: texto}).then(function(){ action('obtenerComentarios', {fila: fila2}).then(function(lista){ mostrarComentarios(fila2, lista); }); }); } });
+
+(function inicio(){
+const t = sesion();
+if (t) accion('cargar', {}).catch(() => render());
+else render();
+})();
+</script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(()=>{})}</script>
+</body>
+</html>
